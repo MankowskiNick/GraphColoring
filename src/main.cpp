@@ -19,6 +19,8 @@
 #include <time.h>
 
 #include "iolib.h"
+#include "lib.h"
+#include "node.h"
 
 // Take arguments from command line
 int main(int argc, char* args[]) {
@@ -45,8 +47,31 @@ int main(int argc, char* args[]) {
         // Assert that the input file successfully opened
         AssertInputFileOpenSuccess(fin.fail(), inputFile);
 
-        // TODO: Read in data from files, put in data structure
-        // Data stored in an adjacency matrix
+        // TODO: Read in data from files, put in 2d array of ints
+        std::vector< std::vector<int> > input_vector;
+        bool newVect = false;
+        int current_value = 0;
+        std::vector<int> current_vect;
+        while (fin >> current_value) {
+            if (!newVect) {
+                current_vect.push_back(current_value);
+            } else {
+                current_vect.push_back(current_value);
+                input_vector.push_back(current_vect);
+                current_vect.resize(0);
+            }
+
+            newVect = !newVect;
+        }
+
+        std::vector< std::vector<bool> > adjacency_matrix;
+        std::vector<Node> node_list;
+        // void InputMapper(const std::vector< std::vector<int> >& input, std::vector< std::vector<bool> >& adjacency_matrix, std::vector<Node>& nodes)
+        InputMapper(input_vector, adjacency_matrix, node_list);
+        std::cout << "done\n";
+        // TODO: Map input vector to an adjacency matrix & node list
+
+
         
         // TODO: Function call to solve graph coloring
 
