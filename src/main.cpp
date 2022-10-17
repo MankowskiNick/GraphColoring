@@ -68,11 +68,12 @@ int main(int argc, char* args[]) {
         std::vector<Node> node_list;
         // void InputMapper(const std::vector< std::vector<int> >& input, std::vector< std::vector<bool> >& adjacency_matrix, std::vector<Node>& nodes)
         InputMapper(input_vector, adjacency_matrix, node_list);
-        std::cout << "done\n";
-        // TODO: Map input vector to an adjacency matrix & node list
+
+        int result = ColorGraph(node_list, adjacency_matrix);
+
+        std::cout << "File:" << inputFile << "\n    -result=" << result << "\n\n" ;
 
 
-        
         // TODO: Function call to solve graph coloring
 
         // TODO: Output files

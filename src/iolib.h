@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <vector>
 #include <assert.h>
 
 // Pre:  Takes the current file argument passed from the console and two empty 
@@ -36,5 +37,6 @@ void AssertInputFileOpenSuccess(bool finStatus, std::string fileName) {
     // Quit the program if the fin open failed
     assert(!finStatus);
 }
+
 
 #endif
