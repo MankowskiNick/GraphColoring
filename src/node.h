@@ -2,8 +2,6 @@
 #define NODE_H
 
 #include <vector>
-//#include "iolib.h"
-
 
 // Remove all occurrences of remove_element from the given vector
 template<typename T>
@@ -83,6 +81,18 @@ class Node {
             return id;
         }
         
+        bool operator>(Node node2) {
+            return id > node2.Id();
+        }
+        bool operator<(Node node2) {
+            return id < node2.Id();
+        }
+        bool operator>=(Node node2) {
+            return id >= node2.Id();
+        }
+        bool operator<=(Node node2) {
+            return id <= node2.Id();
+        }
 
     private:
         int id;

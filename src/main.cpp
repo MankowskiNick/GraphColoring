@@ -73,10 +73,14 @@ int main(int argc, char* args[]) {
 
         std::cout << "File:" << inputFile << "\n    -result=" << result << "\n\n" ;
 
-
-        // TODO: Function call to solve graph coloring
-
         // TODO: Output files
+        fout.open(outputFile.data());
+
+        fout << result << "\n";
+        for (int i = 0; i < node_list.size(); i++) {
+            fout << node_list[i].color << " ";
+        }
+        fout << "\n";
 
         // Close the input & output files
         fin.close();
