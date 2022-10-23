@@ -1,9 +1,17 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
+#include <math.h>
+#include <stdlib.h>
 
 #include "node.h"
 #include "quicksort.h"
+
+//#define INT_MAX 2147483647 // Was getting weird compiler errors saying INT_MAX was undefined so I defined it
+
+#define TIME_MAX 600
+#define START_TEMP_SCALAR 20
+#define TEMP_MIN 0.0001
 
 // Get whether an element exists in a vector
 template<typename T>
@@ -14,6 +22,12 @@ bool ExistsInVector(std::vector<T>& vector, T element) {
     return false;
 }
 
+template<typename T>
+void Swap(T obj1, T obj2) {
+    T temp = obj1;
+    obj1 = obj2;
+    obj2 = temp;
+}
 // Map input vector to a node list & adjacency matrix
 void InputMapper(const std::vector< std::vector<int> >& input, std::vector< std::vector<bool> >& adjacency_matrix, std::vector<Node>& nodes) {
     
@@ -80,6 +94,12 @@ void SeedNodeColors(std::vector<Node>& node_list, int n) {
     }
 }
 
+// Overload to use a specific vector rather than n possible colors
+void SeedNodeColors(std::vector<Node>& node_list, const std::vector<int>& colors_used) {
+    for (int i = 0; i < node_list.size(); i++) {
+        node_list[i].SetPossibleColors(colors_used);
+    }
+}
 // Clear possible colors from nodes
 void ClearNodes(std::vector<Node>& node_list) {
     for (int i = 0; i < node_list.size(); i++) {
@@ -88,10 +108,16 @@ void ClearNodes(std::vector<Node>& node_list) {
     }
 }
 
+void ClearNodeColors(std::vector<Node>& node_list) {
+    for (int i = 0; i < node_list.size(); i++) {
+        node_list[i].color = -1;
+    }
+}
+
 // Remove color from nodes adjacent to cur_node
 void RemoveFromAdjacentNodes(std::vector<Node>& node_list, const std::vector< std::vector<bool> >& adjacency_matrix, int cur_node, int remove_color) {
     for (int i = 0; i < node_list.size(); i++) {
-        if (i != cur_node && adjacency_matrix[i][cur_node]) {
+        if (node_list[i].Id() != cur_node && adjacency_matrix[node_list[i].Id()][node_list[cur_node].Id()]) {
             node_list[i].RemovePossibleColor(remove_color);
         }
     }
@@ -100,7 +126,7 @@ void RemoveFromAdjacentNodes(std::vector<Node>& node_list, const std::vector< st
 // Add color to nodes adjacent to cur_node
 void AddToAdjacentNodes(std::vector<Node>& node_list, const std::vector< std::vector<bool> >& adjacency_matrix, int cur_node, int add_color) {
     for (int i = 0; i < node_list.size(); i++) {
-        if (i != cur_node && adjacency_matrix[i][cur_node]) {
+        if (node_list[i].Id() != cur_node && adjacency_matrix[node_list[i].Id()][node_list[cur_node].Id()]) {
             node_list[i].AddPossibleColor(add_color);
         }
     }
@@ -138,53 +164,52 @@ void GetColorsUsed(const std::vector<Node>& node_list, std::vector<int>& output_
     }
 }
 
-// Insert mistakes into node_list
-void TamperWithNodes(std::vector<Node>& node_list, const std::vector< std::vector<bool> >& adjacency_matrix, std::vector<int>& node_edge_counts, int temp) {
-    // Order lists & counts by node_vertice_counts value
-    QuickSort2<int, Node>::SortDescending(node_edge_counts, node_list);
-
-    // MAYBE: Shuffle possible colors 
-
-    // Make changes to the top 'temp' values
-    for (int i = 0; i < temp; i++) {
-        if (node_list[i].possible_colors.size() > 1) {
-            for (int j = 0; j < node_list[i].possible_colors.size(); j++) {
-                if (node_list[i].CheckColorPossible(node_list[i].possible_colors[j])) {
-                    node_list[i].RemovePossibleColor(node_list[i].color);
-                    UpdateNodes(node_list, adjacency_matrix, i, node_list[i].possible_colors[j]);  // maybe change what color we use to be random. could help!
-                    return;
-                }
-            }
-        }
-    }
-
-    // Order the list back to the original order
-    QuickSort<Node>::Sort(node_list);
-}
-
 // Validate node_list
 bool ValidateNodes(std::vector<Node>& node_list, const std::vector< std::vector<bool> > & adjacency_matrix) {
     for (int i = 0; i < node_list.size(); i++) {
         for (int j = 0; j < node_list.size(); j++) {
-            if (i != j && node_list[i].color == node_list[j].color && adjacency_matrix[i][j]) {
+            if (i != j && node_list[i].color == node_list[j].color && adjacency_matrix[node_list[i].Id()][node_list[j].Id()]) {
                 return false;
             }
         }
     }
     return true;
 }
-// Color graph 'quickly'
+
+// Shuffle possible_colors so we can get a different result
+void ShufflePossibleColors(std::vector<Node>& node_list) {
+    for (int i = 0; i < node_list.size(); i++) {
+        node_list[i].ShufflePossibleColors();
+    }
+}
+
+
+// Initial graph coloring
 bool ColorGraph_Helper(std::vector<Node>& node_list, const std::vector< std::vector<bool> >& adjacency_matrix, int cur_node) {
     if (cur_node == node_list.size()) return true;
+    if (node_list[cur_node].possible_colors.size() == 0) return false;
+    int old_color = node_list[cur_node].color;
     for (int j = 0; j < node_list[cur_node].possible_colors.size(); j++) {
         int cur_color = node_list[cur_node].possible_colors[j];
-        if (node_list[cur_node].CheckColorPossible(cur_color)) {
-            UpdateNodes(node_list, adjacency_matrix, cur_node, cur_color);
-            return ColorGraph_Helper(node_list, adjacency_matrix, cur_node + 1);
+        UpdateNodes(node_list, adjacency_matrix, cur_node, cur_color);
+        if (ColorGraph_Helper(node_list, adjacency_matrix, cur_node + 1)) {
+            return true;
+        } else {
+            UpdateNodes(node_list, adjacency_matrix, cur_node, old_color);
         }
     }
     return false;
 }
+
+bool QuickColor(std::vector<Node>& node_list, const std::vector< std::vector<bool> >& adjacency_matrix, int cur_node) {
+    if (cur_node == node_list.size()) return true;
+    else if (node_list[cur_node].possible_colors.size() == 0) return false;
+    else {
+        UpdateNodes(node_list, adjacency_matrix, cur_node, node_list[cur_node].possible_colors[0]);
+        return QuickColor(node_list, adjacency_matrix, cur_node + 1);
+    }
+}
+
 
 // Solve graph coloring
 int ColorGraph(std::vector<Node>& node_list, std::vector< std::vector<bool> >& adjacency_matrix) {
@@ -192,45 +217,87 @@ int ColorGraph(std::vector<Node>& node_list, std::vector< std::vector<bool> >& a
     // Deep copy a vector that we can use to work
     std::vector<Node> work_list = std::vector<Node>(node_list);
 
+    
     // Get a quick heuristic
-    int i = node_list.size(); 
-    bool result = true;
-    while (result) {
-        SeedNodeColors(work_list, i);
-        result = ColorGraph_Helper(work_list, adjacency_matrix, 0);
-        if (result) node_list = std::vector<Node>(work_list);
-        ClearNodes(work_list);
-        i--;
+    SeedNodeColors(work_list, node_list.size());
+    bool result = ColorGraph_Helper(work_list, adjacency_matrix, 0);
+    if (result) {
+        node_list = std::vector<Node>(work_list);
+    }else {
+        return -1;
     }
 
-
-    // Make a backup before we fuck up our list
-    std::vector<Node> node_list_backup(node_list);
-
+    
     // Simulated Annealing
-    int temp = node_list.size();
 
-    std::vector<int> node_edge_counts;
-    for (int i = 0; i < adjacency_matrix.size(); i++) {
-        int num_vertices = 0;
-        for (int j = 0; j < adjacency_matrix.size(); j++) {
-            if (adjacency_matrix[i][j]) num_vertices++;
+    // Initialize temperature
+    double initial_temp = (START_TEMP_SCALAR * START_TEMP_SCALAR) / double(node_list.size());
+    double temp = double(initial_temp);
+    
+    // Get this so we can compare data in the debugger
+    int pre_annealing_check = CountColors(node_list);
+
+    // Seed node colors
+    std::vector<int> colors_used;
+    GetColorsUsed(node_list, colors_used);
+    SeedNodeColors(node_list, colors_used);
+    
+    std::vector<Node> backup_list = std::vector<Node>(node_list);
+
+    // Start simulated annealing
+    int iteration = 1;
+    while (temp > TEMP_MIN) {
+
+        // Get a working list
+        std::vector<Node> annealing_list = std::vector<Node>(node_list);
+        GetColorsUsed(node_list, colors_used);
+        SeedNodeColors(annealing_list, colors_used);
+        ClearNodeColors(annealing_list);
+
+        // Reshuffle all of the possible_colors
+        //ShufflePossibleColors(annealing_list);
+        std::random_shuffle(annealing_list.begin(), annealing_list.end());
+
+        // Recolor the graph
+        QuickColor(annealing_list, adjacency_matrix, 0);
+        bool valid = ValidateNodes(annealing_list, adjacency_matrix);
+
+        if (valid) {
+
+            int check = CountColors(annealing_list);
+
+            temp = initial_temp / double(iteration);
+            //temp *= cooling_rate;
+            double take_probability = exp(-1 * (check - CountColors(node_list)) / (temp + 1));
+
+            // We need to calulate the probability to take it.
+            double random = double(rand()) / double(RAND_MAX);
+            if (check < CountColors(node_list) || random < take_probability) {
+                node_list = std::vector<Node>(annealing_list);
+            }
         }
-        node_edge_counts.push_back(num_vertices);
+
+        iteration++;
     }
-
-    while (temp > 0) {
-        // Make changes
-        TamperWithNodes(node_list, adjacency_matrix, node_edge_counts, temp);
-
-        //ColorGraph_Helper(node_list, adjacency_matrix, 0);
-
-        if (CountColors(node_list) < CountColors(node_list_backup) && ColorGraph_Helper(node_list, adjacency_matrix, 0)) node_list_backup = std::vector<Node>(node_list);
-        //else node_list = std::vector<Node>(node_list_backup);
-        // Fix them
-        temp--;
+    
+    // Make sure we sort by id
+    for (int i = 0; i < node_list.size(); i++) {
+        node_list[i].SortById = true;
     }
-
-    QuickSort<Node>::Sort(node_list_backup);
-    return CountColors(node_list_backup);
+    
+    int post_annealing_check = CountColors(node_list);
+    if (post_annealing_check <= pre_annealing_check) {
+        QuickSort<Node>::Sort(node_list);
+        std::vector<int> final_colors_used;
+        GetColorsUsed(node_list, final_colors_used);
+        //MinimizeNodeColors(node_list, final_colors_used);
+        return post_annealing_check;
+    } else {
+        QuickSort<Node>::Sort(backup_list);
+        node_list = std::vector<Node>(backup_list);
+        std::vector<int> final_colors_used;
+        GetColorsUsed(node_list, final_colors_used);
+        //MinimizeNodeColors(node_list, final_colors_used);
+        return pre_annealing_check;
+    }
 }

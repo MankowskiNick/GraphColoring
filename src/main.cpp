@@ -21,6 +21,7 @@
 #include "iolib.h"
 #include "lib.h"
 #include "node.h"
+#include "quicksort.h"
 
 // Take arguments from command line
 int main(int argc, char* args[]) {
@@ -69,6 +70,11 @@ int main(int argc, char* args[]) {
         // void InputMapper(const std::vector< std::vector<int> >& input, std::vector< std::vector<bool> >& adjacency_matrix, std::vector<Node>& nodes)
         InputMapper(input_vector, adjacency_matrix, node_list);
 
+        // Order node_list by the # 
+        for (int i = 0; i < node_list.size(); i++) {
+            node_list[i].SortById = false;
+        }
+        QuickSort<Node>::Sort(node_list);
         int result = ColorGraph(node_list, adjacency_matrix);
 
         std::cout << "File:" << inputFile << "\n    -result=" << result << "\n\n" ;

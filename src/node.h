@@ -2,6 +2,7 @@
 #define NODE_H
 
 #include <vector>
+#include <algorithm>
 
 // Remove all occurrences of remove_element from the given vector
 template<typename T>
@@ -28,6 +29,7 @@ class Node {
         Node(int initial_id) {
             id = initial_id;
             color = -1;
+            SortById = true;
         }
 
         int color;
@@ -75,23 +77,41 @@ class Node {
             return false;
         }
 
+        void ShufflePossibleColors() {
+            std::random_shuffle(possible_colors.begin(), possible_colors.end());
+        }
+
         std::vector<int> possible_colors;
     
         int Id() {
             return id;
         }
         
+
+        bool SortById;
         bool operator>(Node node2) {
-            return id > node2.Id();
+            if (SortById)
+                return id > node2.Id();
+            else
+                return possible_colors.size() > node2.possible_colors.size();
         }
         bool operator<(Node node2) {
-            return id < node2.Id();
+            if (SortById)
+                return id < node2.Id();
+            else
+                return possible_colors.size() < node2.possible_colors.size();
         }
         bool operator>=(Node node2) {
-            return id >= node2.Id();
+            if (SortById)
+                return id >= node2.Id();
+            else
+                return possible_colors.size() >= node2.possible_colors.size();
         }
         bool operator<=(Node node2) {
-            return id <= node2.Id();
+            if (SortById)
+                return id <= node2.Id();
+            else
+                return possible_colors.size() <= node2.possible_colors.size();
         }
 
     private:
