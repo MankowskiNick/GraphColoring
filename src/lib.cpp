@@ -10,8 +10,8 @@
 //#define INT_MAX 2147483647 // Was getting weird compiler errors saying INT_MAX was undefined so I defined it
 
 #define TIME_MAX 600
-#define START_TEMP_SCALAR 20
-#define TEMP_MIN 0.0001
+#define START_TEMP_SCALAR 100
+#define TEMP_MIN 0.001
 
 // Get whether an element exists in a vector
 template<typename T>

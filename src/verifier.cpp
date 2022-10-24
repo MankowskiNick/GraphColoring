@@ -53,6 +53,7 @@ void Verify(string input_filename, string output_filename) {
 
 int main(int argc, char* args[]) {
     for (int i = 1; i < argc; i+=2) {    
+      std::cout << "Checking file - " << string(args[i]) << "\n";
       Verify(string(args[i]), string(args[i + 1]));
     }
 }
