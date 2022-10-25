@@ -16,7 +16,7 @@
 
 #include <iostream>
 #include <fstream>
-#include <time.h>
+#include <ctime>
 
 #include "iolib.h"
 #include "lib.h"
@@ -75,7 +75,8 @@ int main(int argc, char* args[]) {
             node_list[i].SortById = false;
         }
         QuickSort<Node>::Sort(node_list);
-        int result = ColorGraph(node_list, adjacency_matrix);
+        time_t start_time = time(NULL);
+        int result = ColorGraph(node_list, adjacency_matrix, start_time);
 
         std::cout << "File:" << inputFile << "\n    -result=" << result << "\n\n" ;
 
