@@ -11,7 +11,7 @@
 //#define INT_MAX 2147483647 // Was getting weird compiler errors saying INT_MAX was undefined so I defined it
 
 #define TIME_MAX 600
-#define START_TEMP_SCALAR 100
+#define START_TEMP_SCALAR 200
 #define TEMP_MIN 1
 
 // Get whether an element exists in a vector
@@ -81,7 +81,7 @@ void InputMapper(const std::vector< std::vector<int> >& input, std::vector< std:
         adjacency_matrix[node2][node1] = true;
     }
 
-    QuickSort<Node>::Sort(nodes);
+    //QuickSort<Node>::Sort(nodes);
 }
 
 // Seed node list with a list of n possible colors
@@ -241,12 +241,16 @@ int ColorGraph(std::vector<Node>& node_list, std::vector< std::vector<bool> >& a
 
     
     // Get a quick heuristic
-    SeedNodeColors(work_list, node_list.size());
-    bool result = ColorGraph_Helper(work_list, adjacency_matrix, 0, start_time);
-    if (result) {
-        node_list = std::vector<Node>(work_list);
-    }else {
-        return -1;
+    bool result = false;
+    while (!result) {
+        SeedNodeColors(work_list, node_list.size());
+        ColorGraph_Helper(work_list, adjacency_matrix, 0, start_time);
+        result = ValidateNodes(work_list, adjacency_matrix);
+        if (result) {
+            node_list = std::vector<Node>(work_list);
+        }else {
+            return -1;
+        }
     }
 
     
@@ -291,7 +295,6 @@ int ColorGraph(std::vector<Node>& node_list, std::vector< std::vector<bool> >& a
 
             int check = CountColors(annealing_list);
 
-            temp = initial_temp / double(iteration);
             //temp *= cooling_rate;
             double take_probability = exp(-1 * (check - CountColors(node_list)) / (temp + 1));
 
@@ -301,6 +304,7 @@ int ColorGraph(std::vector<Node>& node_list, std::vector< std::vector<bool> >& a
                 node_list = std::vector<Node>(annealing_list);
             }
         }
+        temp = initial_temp / double(iteration);
         iteration++;
 
     }

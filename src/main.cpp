@@ -48,7 +48,7 @@ int main(int argc, char* args[]) {
         // Assert that the input file successfully opened
         AssertInputFileOpenSuccess(fin.fail(), inputFile);
 
-        // TODO: Read in data from files, put in 2d array of ints
+        // Read in data from files, put in 2d array of ints
         std::vector< std::vector<int> > input_vector;
         bool newVect = false;
         int current_value = 0;
