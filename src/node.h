@@ -34,6 +34,10 @@ class Node {
 
         int color;
 
+        int Id() {
+            return id;
+        }
+
         void SetPossibleColors(const std::vector<int>& potential_color_list) {
             // Deep copy the list
             possible_colors = std::vector<int>(potential_color_list); 
@@ -70,9 +74,16 @@ class Node {
             possible_colors[index] = new_color;
         }
 
-        bool CheckColorPossible(int new_color) {
+        const bool CheckColorPossible(std::vector<Node>& node_list, const std::vector< std::vector<bool> >& adjacency_matrix, int new_color) {
             for (int i = 0; i < possible_colors.size(); i++) {
-                if (possible_colors[i] == new_color) return true;
+                if (possible_colors[i] == new_color) {
+                    for (int j = 0; j < node_list.size(); j++) {
+                        if (adjacency_matrix[Id()][node_list[j].Id()] && node_list[j].color == new_color) {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
             }
             return false;
         }
@@ -82,11 +93,6 @@ class Node {
         }
 
         std::vector<int> possible_colors;
-    
-        int Id() {
-            return id;
-        }
-        
 
         bool SortById;
         bool operator>(Node node2) {

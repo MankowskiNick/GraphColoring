@@ -11,8 +11,8 @@
 //#define INT_MAX 2147483647 // Was getting weird compiler errors saying INT_MAX was undefined so I defined it
 
 #define TIME_MAX 600
-#define START_TEMP_SCALAR 200
-#define TEMP_MIN 1
+#define START_TEMP_SCALAR 100
+#define TEMP_MIN 2
 
 // Get whether an element exists in a vector
 template<typename T>
@@ -81,7 +81,9 @@ void InputMapper(const std::vector< std::vector<int> >& input, std::vector< std:
         adjacency_matrix[node2][node1] = true;
     }
 
-    //QuickSort<Node>::Sort(nodes);
+    QuickSort<Node>::Sort(nodes);
+    //QuickSort<Node>::SortDescending(nodes);
+    //std::random_shuffle(nodes.begin(), nodes.end());
 }
 
 // Seed node list with a list of n possible colors
@@ -120,7 +122,7 @@ void ClearNodeColors(std::vector<Node>& node_list) {
 // Remove color from nodes adjacent to cur_node
 void RemoveFromAdjacentNodes(std::vector<Node>& node_list, const std::vector< std::vector<bool> >& adjacency_matrix, int cur_node, int remove_color) {
     for (int i = 0; i < node_list.size(); i++) {
-        if (node_list[i].Id() != cur_node && adjacency_matrix[node_list[i].Id()][node_list[cur_node].Id()]) {
+        if (node_list[i].Id() != node_list[cur_node].Id() && adjacency_matrix[node_list[i].Id()][node_list[cur_node].Id()]) {
             node_list[i].RemovePossibleColor(remove_color);
         }
     }
@@ -129,7 +131,7 @@ void RemoveFromAdjacentNodes(std::vector<Node>& node_list, const std::vector< st
 // Add color to nodes adjacent to cur_node
 void AddToAdjacentNodes(std::vector<Node>& node_list, const std::vector< std::vector<bool> >& adjacency_matrix, int cur_node, int add_color) {
     for (int i = 0; i < node_list.size(); i++) {
-        if (node_list[i].Id() != cur_node && adjacency_matrix[node_list[i].Id()][node_list[cur_node].Id()]) {
+        if (node_list[i].Id() != node_list[cur_node].Id() && adjacency_matrix[node_list[i].Id()][node_list[cur_node].Id()]) {
             node_list[i].AddPossibleColor(add_color);
         }
     }
@@ -206,18 +208,25 @@ void NormalizeNodeColors(std::vector<Node>& node_list) {
 }
 
 // Initial graph coloring
-bool ColorGraph_Helper(std::vector<Node>& node_list, const std::vector< std::vector<bool> >& adjacency_matrix, int cur_node, const time_t& start_time) {
+bool ColorGraph_Helper(std::vector<Node>& node_list, const std::vector< std::vector<bool> >& adjacency_matrix, int cur_node, const time_t& start_time, bool track_time, bool& immediate_break) {
     if (cur_node == node_list.size()) return true;
     if (node_list[cur_node].possible_colors.size() == 0) return false;
-    if (start_time + 1 <= time(NULL)) return false;
+    if (start_time + 1 <= time(NULL) && track_time) {
+        immediate_break = true;
+        return false;
+    }
     int old_color = node_list[cur_node].color;
     for (int j = 0; j < node_list[cur_node].possible_colors.size(); j++) {
         int cur_color = node_list[cur_node].possible_colors[j];
-        UpdateNodes(node_list, adjacency_matrix, cur_node, cur_color);
-        if (ColorGraph_Helper(node_list, adjacency_matrix, cur_node + 1, start_time)) {
-            return true;
-        } else {
-            UpdateNodes(node_list, adjacency_matrix, cur_node, old_color);
+        if (node_list[cur_node].CheckColorPossible(node_list, adjacency_matrix, cur_color)) {
+            UpdateNodes(node_list, adjacency_matrix, cur_node, cur_color);
+            bool instant_break = false;
+            if (ColorGraph_Helper(node_list, adjacency_matrix, cur_node + 1, start_time, track_time, instant_break)) {
+                return true;
+            } else {
+                UpdateNodes(node_list, adjacency_matrix, cur_node, old_color);
+                if (instant_break) break;
+            }
         }
     }
     return false;
@@ -244,7 +253,8 @@ int ColorGraph(std::vector<Node>& node_list, std::vector< std::vector<bool> >& a
     bool result = false;
     while (!result) {
         SeedNodeColors(work_list, node_list.size());
-        ColorGraph_Helper(work_list, adjacency_matrix, 0, start_time);
+        bool instant_break; // this value doesn't really matter
+        ColorGraph_Helper(work_list, adjacency_matrix, 0, start_time, false, instant_break);
         result = ValidateNodes(work_list, adjacency_matrix);
         if (result) {
             node_list = std::vector<Node>(work_list);
@@ -255,7 +265,6 @@ int ColorGraph(std::vector<Node>& node_list, std::vector< std::vector<bool> >& a
 
     
     // Simulated Annealing
-
     // Initialize temperature
     double initial_temp = (START_TEMP_SCALAR * START_TEMP_SCALAR) / double(node_list.size());
     double temp = double(initial_temp);
@@ -280,7 +289,7 @@ int ColorGraph(std::vector<Node>& node_list, std::vector< std::vector<bool> >& a
         SeedNodeColors(annealing_list, colors_used);
         ClearNodeColors(annealing_list);
 
-        // Reshuffle all of the possible_colors
+        // Reshuffle all of the possible_colors - maybe we could make a different change
         //ShufflePossibleColors(annealing_list);
         std::random_shuffle(annealing_list.begin(), annealing_list.end());
         //SwapRandomNodes(annealing_list);
@@ -288,19 +297,23 @@ int ColorGraph(std::vector<Node>& node_list, std::vector< std::vector<bool> >& a
         // Recolor the graph
         //QuickColor(annealing_list, adjacency_matrix, 0);
         time_t cur_time = time(NULL);
-        ColorGraph_Helper(annealing_list, adjacency_matrix, 0, cur_time);
-        bool valid = ValidateNodes(annealing_list, adjacency_matrix);
+        bool instant_break;
+        bool valid = ColorGraph_Helper(annealing_list, adjacency_matrix, 0, cur_time, true, instant_break);
+        /*
+        bool valid2 = ValidateNodes(annealing_list, adjacency_matrix);
+
+        if (valid != valid2) {
+            std::cout<<"";
+        }
+        */
 
         if (valid) {
 
             int check = CountColors(annealing_list);
 
-            //temp *= cooling_rate;
             double take_probability = exp(-1 * (check - CountColors(node_list)) / (temp + 1));
-
-            // We need to calulate the probability to take it.
             double random = double(rand()) / double(RAND_MAX);
-            if (check < CountColors(node_list) || random < take_probability) {
+            if (check < CountColors(node_list) || (random < take_probability && check < CountColors(node_list))) {
                 node_list = std::vector<Node>(annealing_list);
             }
         }
