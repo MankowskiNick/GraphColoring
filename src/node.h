@@ -45,7 +45,6 @@ class Node {
 
         bool RemovePossibleColor(const int remove_color) {
             // RemoveFromVector<int>(possible_colors, remove_color);
-            // TODO: fix this when i am sober
             bool found_color = false;
             int list_size = possible_colors.size();
             for (int i = 0; i < list_size; i++) {

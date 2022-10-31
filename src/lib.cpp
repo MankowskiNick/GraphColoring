@@ -12,6 +12,8 @@
 
 #define TIME_MAX 600
 #define START_TEMP_SCALAR 100
+#define PERCENT_CHANGES 0.3
+#define MAX_NUM_CHANGES 100
 #define TEMP_MIN 2
 
 // Get whether an element exists in a vector
@@ -24,7 +26,7 @@ bool ExistsInVector(std::vector<T>& vector, T element) {
 }
 
 template<typename T>
-void Swap(T obj1, T obj2) {
+void Swap(T& obj1, T& obj2) {
     T temp = obj1;
     obj1 = obj2;
     obj2 = temp;
@@ -291,8 +293,10 @@ int ColorGraph(std::vector<Node>& node_list, std::vector< std::vector<bool> >& a
 
         // Reshuffle all of the possible_colors - maybe we could make a different change
         //ShufflePossibleColors(annealing_list);
-        std::random_shuffle(annealing_list.begin(), annealing_list.end());
-        //SwapRandomNodes(annealing_list);
+        //std::random_shuffle(annealing_list.begin(), annealing_list.end());
+        for (int i = 0; i < PERCENT_CHANGES * annealing_list.size(); i++) {
+            SwapRandomNodes(annealing_list);
+        }
 
         // Recolor the graph
         //QuickColor(annealing_list, adjacency_matrix, 0);
