@@ -10,10 +10,10 @@
 
 //#define INT_MAX 2147483647 // Was getting weird compiler errors saying INT_MAX was undefined so I defined it
 
-#define TIME_MAX 600
-#define START_TEMP_SCALAR 100
-#define PERCENT_CHANGES 0.3
-#define MAX_NUM_CHANGES 100
+#define TIME_MAX 60
+#define START_TEMP_SCALAR 1000 // play with this
+#define PERCENT_CHANGES 0.5 // play with this
+#define MAX_NUM_CHANGES 100 // play with this
 #define TEMP_MIN 2
 
 // Get whether an element exists in a vector
@@ -149,6 +149,7 @@ void UpdateNodes(std::vector<Node>& node_list, const std::vector< std::vector<bo
 }
 
 // Swap two random elements in the list of nodes, our "random" change in simulated annealing
+// MAY BECOME DEPRACATED
 void SwapRandomNodes(std::vector<Node>& node_list) {
     int swap_node1 = 0;
     int swap_node2 = 0;
@@ -157,6 +158,30 @@ void SwapRandomNodes(std::vector<Node>& node_list) {
         swap_node2 = rand() % node_list.size();
     }
     Swap<Node>(node_list[swap_node1], node_list[swap_node2]);
+}
+
+template<typename T>
+bool InsertAtPosition(std::vector<T>& vect, T& add_item, int index) {
+    vect.resize(vect.size() + 1);
+    if (index >= vect.size() || index < 0) throw std::out_of_range ("Out of Range Exception: Insert index is out of range of vector.");
+    for (int i = vect.size() - 2; i >= index; i--) {
+        vect[i + 1] = vect[i];
+    }
+    vect[index] = add_item;
+    return true;
+}
+
+void SpliceRandomNode(std::vector<Node>& node_list) {
+    Node rand_node;
+    int remove_index = rand() % (node_list.size() - 2);
+    rand_node = node_list[remove_index];
+    RemoveFromVector<Node>(node_list, rand_node);
+    int constraint = node_list.size() - remove_index + 1;
+    int random = rand() % constraint;
+
+    int new_index = random + remove_index;
+    InsertAtPosition(node_list, rand_node, new_index);
+    return;
 }
 
 // Get the colors currently present in node_list
@@ -234,6 +259,7 @@ bool ColorGraph_Helper(std::vector<Node>& node_list, const std::vector< std::vec
     return false;
 }
 
+// DEPRECATED
 bool QuickColor(std::vector<Node>& node_list, const std::vector< std::vector<bool> >& adjacency_matrix, int cur_node) {
     if (cur_node == node_list.size()) return true;
     else if (node_list[cur_node].possible_colors.size() == 0) return false;
@@ -243,7 +269,56 @@ bool QuickColor(std::vector<Node>& node_list, const std::vector< std::vector<boo
     }
 }
 
+void Anneal(std::vector<Node>& node_list, std::vector< std::vector<bool> >& adjacency_matrix, int num_changes) {
 
+    // Simulated Annealing
+    // Initialize temperature
+    double initial_temp = (START_TEMP_SCALAR * START_TEMP_SCALAR) / double(node_list.size());
+    double temp = double(initial_temp);
+    
+
+    // Seed node colors
+    std::vector<int> colors_used;
+    GetColorsUsed(node_list, colors_used);
+    SeedNodeColors(node_list, colors_used);
+    
+
+    // Start simulated annealing
+    int iteration = 1;
+    while (temp > TEMP_MIN) {// && time(NULL) - start_time < TIME_MAX) {
+
+        // Get a working list
+        std::vector<Node> annealing_list = std::vector<Node>(node_list);
+        GetColorsUsed(node_list, colors_used);
+        SeedNodeColors(annealing_list, colors_used);
+        ClearNodeColors(annealing_list);
+
+        // Reshuffle all of the possible_colors - maybe we could make a different change
+        for (int i = 0; i < num_changes; i++) {
+            SwapRandomNodes(annealing_list);
+            //SpliceRandomNode(annealing_list); // problem in this
+        }
+
+        // Recolor the graph
+        time_t cur_time = time(NULL);
+        bool instant_break;
+        bool valid = ColorGraph_Helper(annealing_list, adjacency_matrix, 0, cur_time, true, instant_break);
+
+        if (valid) {
+
+            int check = CountColors(annealing_list);
+
+            double take_probability = exp(-1 * (check - CountColors(node_list)) / (temp + 1));
+            double random = double(rand()) / double(RAND_MAX);
+            if (check < CountColors(node_list) || (random < take_probability && check < CountColors(node_list))) {
+                node_list = std::vector<Node>(annealing_list);
+            }
+        }
+        temp = initial_temp / double(iteration);
+        iteration++;
+
+    }
+}
 // Solve graph coloring
 int ColorGraph(std::vector<Node>& node_list, std::vector< std::vector<bool> >& adjacency_matrix, const time_t& start_time) {
 
@@ -264,66 +339,18 @@ int ColorGraph(std::vector<Node>& node_list, std::vector< std::vector<bool> >& a
             return -1;
         }
     }
-
     
-    // Simulated Annealing
-    // Initialize temperature
-    double initial_temp = (START_TEMP_SCALAR * START_TEMP_SCALAR) / double(node_list.size());
-    double temp = double(initial_temp);
+    // Backup result - just in case
+    std::vector<Node> backup_list = std::vector<Node>(node_list);
     
     // Get this so we can compare data in the debugger
     int pre_annealing_check = CountColors(node_list);
 
-    // Seed node colors
-    std::vector<int> colors_used;
-    GetColorsUsed(node_list, colors_used);
-    SeedNodeColors(node_list, colors_used);
-    
-    std::vector<Node> backup_list = std::vector<Node>(node_list);
-
-    // Start simulated annealing
-    int iteration = 1;
-    while (temp > TEMP_MIN) {
-
-        // Get a working list
-        std::vector<Node> annealing_list = std::vector<Node>(node_list);
-        GetColorsUsed(node_list, colors_used);
-        SeedNodeColors(annealing_list, colors_used);
-        ClearNodeColors(annealing_list);
-
-        // Reshuffle all of the possible_colors - maybe we could make a different change
-        //ShufflePossibleColors(annealing_list);
-        //std::random_shuffle(annealing_list.begin(), annealing_list.end());
-        for (int i = 0; i < PERCENT_CHANGES * annealing_list.size(); i++) {
-            SwapRandomNodes(annealing_list);
-        }
-
-        // Recolor the graph
-        //QuickColor(annealing_list, adjacency_matrix, 0);
-        time_t cur_time = time(NULL);
-        bool instant_break;
-        bool valid = ColorGraph_Helper(annealing_list, adjacency_matrix, 0, cur_time, true, instant_break);
-        /*
-        bool valid2 = ValidateNodes(annealing_list, adjacency_matrix);
-
-        if (valid != valid2) {
-            std::cout<<"";
-        }
-        */
-
-        if (valid) {
-
-            int check = CountColors(annealing_list);
-
-            double take_probability = exp(-1 * (check - CountColors(node_list)) / (temp + 1));
-            double random = double(rand()) / double(RAND_MAX);
-            if (check < CountColors(node_list) || (random < take_probability && check < CountColors(node_list))) {
-                node_list = std::vector<Node>(annealing_list);
-            }
-        }
-        temp = initial_temp / double(iteration);
-        iteration++;
-
+    // Perform annealing
+    int max_changes = PERCENT_CHANGES * node_list.size();
+    if (max_changes == 0) max_changes = 1;
+    for (int i = 1; i <= max_changes && time(NULL) - start_time < TIME_MAX; i++) {
+        Anneal(node_list, adjacency_matrix, i);
     }
     
     // Make sure we sort by id

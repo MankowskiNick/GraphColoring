@@ -11,7 +11,7 @@ void RemoveFromVector(std::vector<T>& list, T remove_element) {
     for (int i = 0; i < list_size; i++) {
         if (list[i] == remove_element) {
             list_size--;
-            for (int j = i; j < list.size(); j++) {
+            for (int j = i; j < list_size; j++) {
                 list[j] = list[j + 1];
             }
             list.resize(list_size);
@@ -117,6 +117,9 @@ class Node {
                 return id <= node2.Id();
             else
                 return possible_colors.size() <= node2.possible_colors.size();
+        }
+        bool operator==(Node node2) {
+            return id == node2.Id();
         }
 
     private:
