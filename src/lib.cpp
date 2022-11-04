@@ -10,9 +10,10 @@
 
 //#define INT_MAX 2147483647 // Was getting weird compiler errors saying INT_MAX was undefined so I defined it
 
-#define TIME_MAX 600
+#define PER_ANNEAL_TIME_MAX 30
+#define TIME_MAX 300
 #define START_TEMP_SCALAR 100 // play with this
-#define PERCENT_CHANGES 0.5 // play with this
+#define PERCENT_CHANGES 0.3 // play with this
 #define MAX_NUM_CHANGES 100 // play with this
 #define TEMP_MIN 2
 
@@ -23,33 +24,6 @@ bool ExistsInVector(std::vector<T>& vector, T element) {
         if (vector[i] == element) return true;
     }
     return false;
-}
-
-// Get the index of the min element in the given vector
-template<typename T>
-int GetMinIndex(std::vector<T>& vect) {
-    int index = 0;
-    T min_result = vect[0];
-
-    for (int i = 0; i < vect.size(); i++) {
-        if (vect[i] < min_result) {
-            index = i;
-            min_result = vect[i];
-        }
-    }
-    return index;
-}
-
-// Insert item at the given index of the set
-template<typename T>
-bool InsertAtPosition(std::vector<T>& vect, T& add_item, int index) {
-    vect.resize(vect.size() + 1);
-    if (index >= vect.size() || index < 0) throw std::out_of_range ("Out of Range Exception: Insert index is out of range of vector.");
-    for (int i = vect.size() - 2; i >= index; i--) {
-        vect[i + 1] = vect[i];
-    }
-    vect[index] = add_item;
-    return true;
 }
 
 template<typename T>
@@ -134,6 +108,14 @@ void SeedNodeColors(std::vector<Node>& node_list, const std::vector<int>& colors
     }
 }
 
+// Clear possible colors from nodes
+void ClearNodes(std::vector<Node>& node_list) {
+    for (int i = 0; i < node_list.size(); i++) {
+        node_list[i].possible_colors = std::vector<int>();
+        node_list[i].color = -1;
+    }
+}
+
 void ClearNodeColors(std::vector<Node>& node_list) {
     for (int i = 0; i < node_list.size(); i++) {
         node_list[i].color = -1;
@@ -179,6 +161,17 @@ void SwapRandomNodes(std::vector<Node>& node_list) {
     Swap<Node>(node_list[swap_node1], node_list[swap_node2]);
 }
 
+template<typename T>
+bool InsertAtPosition(std::vector<T>& vect, T& add_item, int index) {
+    vect.resize(vect.size() + 1);
+    if (index >= vect.size() || index < 0) throw std::out_of_range ("Out of Range Exception: Insert index is out of range of vector.");
+    for (int i = vect.size() - 2; i >= index; i--) {
+        vect[i + 1] = vect[i];
+    }
+    vect[index] = add_item;
+    return true;
+}
+
 void SpliceRandomNode(std::vector<Node>& node_list) {
     Node rand_node;
     int remove_index = rand() % (node_list.size() - 2);
@@ -210,7 +203,7 @@ int CountColors(const std::vector<Node>& node_list) {
 }
 
 // Validate node_list
-bool ValidateNodes(std::vector<Node>& node_list, const std::vector< std::vector<bool> > & adjacency_matrix) {  // maybe remove
+bool ValidateNodes(std::vector<Node>& node_list, const std::vector< std::vector<bool> > & adjacency_matrix) {
     for (int i = 0; i < node_list.size(); i++) {
         for (int j = 0; j < node_list.size(); j++) {
             if (i != j && node_list[i].color == node_list[j].color && adjacency_matrix[node_list[i].Id()][node_list[j].Id()]) {
@@ -219,6 +212,13 @@ bool ValidateNodes(std::vector<Node>& node_list, const std::vector< std::vector<
         }
     }
     return true;
+}
+
+// Shuffle possible_colors so we can get a different result
+void ShufflePossibleColors(std::vector<Node>& node_list) {
+    for (int i = 0; i < node_list.size(); i++) {
+        node_list[i].ShufflePossibleColors();
+    }
 }
 
 //Normalize the node colors to to from 0 -> n-1
@@ -235,7 +235,7 @@ void NormalizeNodeColors(std::vector<Node>& node_list) {
     }
 }
 
-// Color graph
+// Initial graph coloring
 bool ColorGraph_Helper(std::vector<Node>& node_list, const std::vector< std::vector<bool> >& adjacency_matrix, int cur_node, const time_t& start_time, bool track_time, bool& immediate_break) {
     if (cur_node == node_list.size()) return true;
     if (node_list[cur_node].possible_colors.size() == 0) return false;
@@ -260,8 +260,17 @@ bool ColorGraph_Helper(std::vector<Node>& node_list, const std::vector< std::vec
     return false;
 }
 
-// Perform simulated annealing
-void Anneal(std::vector<Node>& node_list, std::vector< std::vector<bool> >& adjacency_matrix, int num_changes) {
+// DEPRECATED
+bool QuickColor(std::vector<Node>& node_list, const std::vector< std::vector<bool> >& adjacency_matrix, int cur_node) {
+    if (cur_node == node_list.size()) return true;
+    else if (node_list[cur_node].possible_colors.size() == 0) return false;
+    else {
+        UpdateNodes(node_list, adjacency_matrix, cur_node, node_list[cur_node].possible_colors[0]);
+        return QuickColor(node_list, adjacency_matrix, cur_node + 1);
+    }
+}
+
+void Anneal(std::vector<Node>& node_list, std::vector< std::vector<bool> >& adjacency_matrix, int num_changes, time_t start_time) {
 
     // Simulated Annealing
     // Initialize temperature
@@ -277,7 +286,7 @@ void Anneal(std::vector<Node>& node_list, std::vector< std::vector<bool> >& adja
 
     // Start simulated annealing
     int iteration = 1;
-    while (temp > TEMP_MIN) {// && time(NULL) - start_time < TIME_MAX) {
+    while (temp > TEMP_MIN && time(NULL) - start_time < PER_ANNEAL_TIME_MAX) {
 
         // Get a working list
         std::vector<Node> annealing_list = std::vector<Node>(node_list);
@@ -311,7 +320,6 @@ void Anneal(std::vector<Node>& node_list, std::vector< std::vector<bool> >& adja
 
     }
 }
-
 // Solve graph coloring
 int ColorGraph(std::vector<Node>& node_list, std::vector< std::vector<bool> >& adjacency_matrix, const time_t& start_time) {
 
@@ -325,7 +333,7 @@ int ColorGraph(std::vector<Node>& node_list, std::vector< std::vector<bool> >& a
         SeedNodeColors(work_list, node_list.size());
         bool instant_break; // this value doesn't really matter
         ColorGraph_Helper(work_list, adjacency_matrix, 0, start_time, false, instant_break);
-        result = ValidateNodes(work_list, adjacency_matrix); // change this ?
+        result = ValidateNodes(work_list, adjacency_matrix);
         if (result) {
             node_list = std::vector<Node>(work_list);
         }else {
@@ -340,24 +348,12 @@ int ColorGraph(std::vector<Node>& node_list, std::vector< std::vector<bool> >& a
     int pre_annealing_check = CountColors(node_list);
 
     // Perform annealing
-    // We need to store our results so we can keep the best one
-    std::vector< std::vector<Node> > annealing_node_lists;
-    std::vector<int> annealing_results;
-
     int max_changes = PERCENT_CHANGES * node_list.size();
     if (max_changes == 0) max_changes = 1;
     for (int i = 1; i <= max_changes && time(NULL) - start_time < TIME_MAX; i++) {
-        std::vector<Node> cur_list(node_list);
-        Anneal(cur_list, adjacency_matrix, i);
-        int cur_result = CountColors(cur_list);
-        annealing_node_lists.push_back(cur_list);
-        annealing_results.push_back(cur_result);
+        Anneal(node_list, adjacency_matrix, i, time(NULL));
     }
-
-    // Get the best result from our annealing
-    int result_index = GetMinIndex<int>(annealing_results);
-    node_list = annealing_node_lists[result_index];
-
+    
     // Make sure we sort by id
     for (int i = 0; i < node_list.size(); i++) {
         node_list[i].SortById = true;
