@@ -11,8 +11,8 @@
 //#define INT_MAX 2147483647 // Was getting weird compiler errors saying INT_MAX was undefined so I defined it
 
 #define TIME_MAX 60
-#define START_TEMP_SCALAR 1000 // play with this
-#define PERCENT_CHANGES 0.5 // play with this
+#define START_TEMP_SCALAR 100 // play with this
+#define PERCENT_CHANGES 0.3 // play with this
 #define MAX_NUM_CHANGES 100 // play with this
 #define TEMP_MIN 2
 

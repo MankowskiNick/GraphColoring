@@ -78,7 +78,7 @@ int main(int argc, char* args[]) {
         time_t start_time = time(NULL);
         int result = ColorGraph(node_list, adjacency_matrix, start_time);
 
-        std::cout << "File:" << inputFile << "\n    -result=" << result << "\n\n" ;
+        std::cout << "File:" << inputFile << "\n    -result=" << result << "\n    -time taken=" << time(NULL) - start_time << "\n\n" ;
 
         // TODO: Output files
         fout.open(outputFile.data());
