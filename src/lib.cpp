@@ -10,9 +10,10 @@
 
 //#define INT_MAX 2147483647 // Was getting weird compiler errors saying INT_MAX was undefined so I defined it
 
-#define TIME_MAX 60
-#define START_TEMP_SCALAR 1000 // play with this
-#define PERCENT_CHANGES 0.5 // play with this
+#define PER_ANNEAL_TIME_MAX 30
+#define TIME_MAX 300
+#define START_TEMP_SCALAR 100 // play with this
+#define PERCENT_CHANGES 0.3 // play with this
 #define MAX_NUM_CHANGES 100 // play with this
 #define TEMP_MIN 2
 
@@ -269,7 +270,7 @@ bool QuickColor(std::vector<Node>& node_list, const std::vector< std::vector<boo
     }
 }
 
-void Anneal(std::vector<Node>& node_list, std::vector< std::vector<bool> >& adjacency_matrix, int num_changes) {
+void Anneal(std::vector<Node>& node_list, std::vector< std::vector<bool> >& adjacency_matrix, int num_changes, time_t start_time) {
 
     // Simulated Annealing
     // Initialize temperature
@@ -285,7 +286,7 @@ void Anneal(std::vector<Node>& node_list, std::vector< std::vector<bool> >& adja
 
     // Start simulated annealing
     int iteration = 1;
-    while (temp > TEMP_MIN) {// && time(NULL) - start_time < TIME_MAX) {
+    while (temp > TEMP_MIN && time(NULL) - start_time < PER_ANNEAL_TIME_MAX) {
 
         // Get a working list
         std::vector<Node> annealing_list = std::vector<Node>(node_list);
@@ -350,7 +351,7 @@ int ColorGraph(std::vector<Node>& node_list, std::vector< std::vector<bool> >& a
     int max_changes = PERCENT_CHANGES * node_list.size();
     if (max_changes == 0) max_changes = 1;
     for (int i = 1; i <= max_changes && time(NULL) - start_time < TIME_MAX; i++) {
-        Anneal(node_list, adjacency_matrix, i);
+        Anneal(node_list, adjacency_matrix, i, time(NULL));
     }
     
     // Make sure we sort by id
