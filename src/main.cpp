@@ -7,12 +7,12 @@
 //  1) Build the program
 //  2) Run the executable generated with the filenames you 
 //     would like to generate outputs for.  For example, 
-//     "GraphColoring.exe ks_4_0 ks_200_0 ks_500_0"
+//     "GraphColoring.exe gc_4_1 gc_20_1 gc_100_7"
 //     would generate output files for the the three listed input files.
 //  3) The output files will match the names of the input files in the same directory, 
 //     but will have "OUTPUT_" before the input file name.  For example, 
-//     "GraphColoring.exe ks_4_0 ks_200_0 ks_500_0"
-//     will generate OUTPUT_ks_4_0, OUTPUT_ks_200_0, OUTPUT_ks_500_0
+//     "GraphColoring.exe  gc_4_1 gc_20_1 gc_100_7"
+//     will generate OUTPUT_gc_4_1, OUTPUT_kgc_20_1, OUTPUT_ks_100_7
 
 #include <iostream>
 #include <fstream>
@@ -27,7 +27,7 @@
 int main(int argc, char* args[]) {
 
     // Look at each file listed in the command line arguments(did this so I don't have to keep running again and typing different file names)
-    // Argument 1 is the "./Knapsack" command, so we have to start looking at args[1] to get file names
+    // Argument 1 is the "./GraphColoring" command, so we have to start looking at args[1] to get file names
     for (int fileIndex = 1; fileIndex < argc; fileIndex++) {    
 
         // Declare a file input stream & file output stream
@@ -65,12 +65,13 @@ int main(int argc, char* args[]) {
             newVect = !newVect;
         }
 
+        // Map inputs
         std::vector< std::vector<bool> > adjacency_matrix;
         std::vector<Node> node_list;
-        // void InputMapper(const std::vector< std::vector<int> >& input, std::vector< std::vector<bool> >& adjacency_matrix, std::vector<Node>& nodes)
+        
         InputMapper(input_vector, adjacency_matrix, node_list);
 
-        // Order node_list by the # 
+        // Order node_list
         for (int i = 0; i < node_list.size(); i++) {
             node_list[i].SortById = false;
         }
@@ -80,7 +81,7 @@ int main(int argc, char* args[]) {
 
         std::cout << "File:" << inputFile << "\n    -result=" << result << "\n    -time spent=" << time(NULL) - start_time << "\n\n" ;
 
-        // TODO: Output files
+        // Output files
         fout.open(outputFile.data());
 
         fout << result << "\n";
